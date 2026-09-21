@@ -1,0 +1,37 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:20.04 AS toolchain
+
+ARG DEBIAN_FRONTEND=noninteractive
+# MXE's archived Focal repository provides a matched Windows compiler and
+# static Qt 5.15.2 build. Qt 5.15.2 is the final public Qt release that
+# officially targets Windows 7.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates cmake curl gnupg ninja-build \
+    && curl -fsSL 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x86B72ED9' \
+       | gpg --dearmor -o /usr/share/keyrings/mxe-archive.gpg \
+    && printf '%s\n' \
+       'deb [arch=amd64 signed-by=/usr/share/keyrings/mxe-archive.gpg] https://pkg.mxe.cc/repos/apt focal main' \
+       > /etc/apt/sources.list.d/mxe.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+       mxe-x86-64-w64-mingw32.static-qtbase \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PATH="/usr/lib/mxe/usr/bin:${PATH}"
+
+FROM toolchain AS builder
+ARG JOBS=4
+COPY . /src
+RUN x86_64-w64-mingw32.static-cmake \
+      -S /src -B /build -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DEDITOR_QT_MAJOR=5 \
+      -DBUILD_TESTING=OFF \
+    && cmake --build /build --parallel "${JOBS}" \
+    && cmake --install /build --prefix /package \
+    && cp /usr/share/common-licenses/LGPL-3 \
+       /package/share/text_editor/licenses/qt-lgpl-3.0.txt \
+    && x86_64-w64-mingw32.static-strip /package/bin/text_editor.exe
+
+FROM scratch AS artifact
+COPY --from=builder /package /

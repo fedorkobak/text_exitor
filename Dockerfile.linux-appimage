@@ -1,0 +1,48 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:20.04 AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG JOBS=4
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential ca-certificates cmake curl file libfuse2 ninja-build \
+    patchelf qt5-qmake qtbase5-dev qtbase5-dev-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fL \
+      https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage \
+      -o /usr/local/bin/linuxdeploy-x86_64.AppImage \
+    && curl -fL \
+      https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage \
+      -o /usr/local/bin/linuxdeploy-plugin-qt-x86_64.AppImage \
+    && curl -fL \
+      https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage \
+      -o /usr/local/bin/linuxdeploy-plugin-appimage-x86_64.AppImage \
+    && chmod +x /usr/local/bin/linuxdeploy-*.AppImage
+
+COPY . /src
+RUN cmake -S /src -B /build -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DEDITOR_QT_MAJOR=5 \
+      -DBUILD_TESTING=OFF \
+    && cmake --build /build --parallel "${JOBS}" \
+    && cmake --install /build --prefix /AppDir/usr \
+    && install -D -m 0644 /src/packaging/text-editor.desktop \
+       /AppDir/usr/share/applications/text-editor.desktop \
+    && install -D -m 0644 /src/packaging/text-editor.svg \
+       /AppDir/usr/share/icons/hicolor/scalable/apps/text-editor.svg
+
+ENV APPIMAGE_EXTRACT_AND_RUN=1
+ENV QMAKE=/usr/bin/qmake
+ENV OUTPUT=/output/TextEditor-x86_64.AppImage
+RUN mkdir -p /output \
+    && linuxdeploy-x86_64.AppImage \
+       --appdir /AppDir \
+       --executable /AppDir/usr/bin/text_editor \
+       --desktop-file /AppDir/usr/share/applications/text-editor.desktop \
+       --icon-file /AppDir/usr/share/icons/hicolor/scalable/apps/text-editor.svg \
+       --plugin qt \
+       --output appimage
+
+FROM scratch AS artifact
+COPY --from=builder /output /

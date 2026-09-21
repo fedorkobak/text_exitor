@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Text Editor
+Comment=Edit text and source files
+Exec=text_editor %F
+Icon=text-editor
+Terminal=false
+Categories=Utility;TextEditor;
+MimeType=text/plain;application/json;text/x-c;text/x-c++;
