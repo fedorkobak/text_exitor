@@ -14,4 +14,4 @@ docker build \
 
 chmod +x "${output_dir}/TextEditor-x86_64.AppImage"
 printf 'Portable Linux executable: %s\n' \
-  "${output_dir}/TextEditor-x86_64.AppImage"
+  "${output_dir}/linux-x86_64.AppImage"

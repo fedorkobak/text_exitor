@@ -1,5 +1,7 @@
 # Text Editor
 
+**Note** fully vibe-coded.
+
 C++17 / Qt Widgets text editor for Windows 10, Ubuntu, and Linux Mint. The
 existing Qt 5 path and Windows 7 target definitions are retained. Qt Widgets
 provides native desktop editing, Unicode, accessibility, font dialogs, and
@@ -201,7 +203,7 @@ The static Windows build principle is unchanged. From Linux with Docker:
 ```
 
 This uses the archived MXE Qt 5.15.2 / GCC 5.5 / MinGW-w64 8.0 toolchain and
-produces `dist/windows/bin/text_editor.exe`. Qt and tree-sitter are statically
+produces `dist/windows/bin/windows.exe`. Qt and tree-sitter are statically
 linked; Windows system DLLs are still required. Keep the license notices in
 `dist/windows/share` when distributing. The target remains Windows 7+
 (`_WIN32_WINNT=0x0601`); test on Windows 10 and separately on Windows 7 if you
@@ -219,8 +221,8 @@ To build natively on Windows 10 using a Qt SDK:
    cmake --build build-win --parallel 2
    ctest --test-dir build-win --output-on-failure
    cmake --install build-win --prefix dist/native-windows
-   windeployqt --release --compiler-runtime --no-translations dist/native-windows/bin/text_editor.exe
-   .\dist\native-windows\bin\text_editor.exe
+   windeployqt --release --compiler-runtime --no-translations dist/native-windows/bin/windows.exe
+   .\dist\native-windows\bin\windows.exe
    ```
 
 The ordinary Qt SDK route creates a dynamically linked application: distribute

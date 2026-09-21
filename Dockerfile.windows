@@ -31,7 +31,7 @@ RUN x86_64-w64-mingw32.static-cmake \
     && cmake --install /build --prefix /package \
     && cp /usr/share/common-licenses/LGPL-3 \
        /package/share/text_editor/licenses/qt-lgpl-3.0.txt \
-    && x86_64-w64-mingw32.static-strip /package/bin/text_editor.exe
+    && x86_64-w64-mingw32.static-strip /package/bin/windows.exe
 
 FROM scratch AS artifact
 COPY --from=builder /package /
