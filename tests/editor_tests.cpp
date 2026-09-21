@@ -174,6 +174,55 @@ private slots:
         cursor.deleteChar();
         QTRY_COMPARE(backgroundAt(editor, editor.toPlainText().indexOf("normal")), QColor(Qt::green));
     }
+    void insertingSeparatorActivatesFollowingBlock_data() {
+        QTest::addColumn<QString>("separatorText");
+        QTest::newRow("empty line") << QString();
+        QTest::newRow("whitespace-only line") << QString(" \t");
+    }
+    void insertingSeparatorActivatesFollowingBlock() {
+        QFETCH(QString, separatorText);
+        Editor editor;
+        AppSettings settings;
+        const QColor color("#9141ac");
+        settings.blocks = {{"hello", color}};
+        editor.highlighter->configure(std::make_shared<HighlightRules>(settings.blocks, settings.phrases), settings);
+        const QString original = "this is some file\n\nhello this\nis block color\n\nthis\nhello this\nis not block color\n\nplain tail";
+        editor.setPlainText(original);
+        // Finish initial/configuration highlighting before exercising the edit;
+        // a pending full refresh would conceal an incremental-update failure.
+        editor.highlighter->rehighlight();
+        QCoreApplication::processEvents();
+        const int firstHello = original.indexOf("hello");
+        const int secondHello = original.lastIndexOf("hello");
+        QCOMPARE(backgroundAt(editor, firstHello), color);
+        QVERIFY(!backgroundAt(editor, secondHello).isValid());
+        QVERIFY(!backgroundAt(editor, original.indexOf("is not block color")).isValid());
+
+        // Press Enter at the END of "this", rather than at the start of
+        // "hello". Qt preserves the following paragraph and its cached state.
+        QTextCursor cursor = editor.textCursor();
+        cursor.setPosition(secondHello - 1);
+        cursor.beginEditBlock();
+        cursor.insertBlock();
+        cursor.insertText(separatorText);
+        cursor.endEditBlock();
+        const QString changed = original.left(secondHello - 1) + '\n' + separatorText + original.mid(secondHello - 1);
+        QCOMPARE(editor.toPlainText(), changed);
+        QTRY_COMPARE(backgroundAt(editor, changed.lastIndexOf("hello")), color);
+        QCOMPARE(backgroundAt(editor, changed.indexOf("is not block color")), color);
+        QCOMPARE(backgroundAt(editor, firstHello), color);
+        QVERIFY(!backgroundAt(editor, changed.indexOf("plain tail")).isValid());
+
+        editor.undo();
+        QCOMPARE(editor.toPlainText(), original);
+        QTRY_VERIFY(!backgroundAt(editor, secondHello).isValid());
+        QVERIFY(!backgroundAt(editor, original.indexOf("is not block color")).isValid());
+        QCOMPARE(backgroundAt(editor, firstHello), color);
+        editor.redo();
+        QCOMPARE(editor.toPlainText(), changed);
+        QTRY_COMPARE(backgroundAt(editor, changed.lastIndexOf("hello")), color);
+        QCOMPARE(backgroundAt(editor, changed.indexOf("is not block color")), color);
+    }
     void unicodeOverlapsAndLargeRuleSet() {
         QVector<ColorRule> rules{{"aba", Qt::yellow}, {"ba", Qt::green}, {QString::fromUtf8("ВАЖНО 😀"), Qt::cyan}};
         for (int i = 0; i < 5000; ++i) rules.append({QString("unused phrase %1!").arg(i), Qt::blue});

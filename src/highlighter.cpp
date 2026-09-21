@@ -6,6 +6,14 @@
 extern "C" const TSLanguage *tree_sitter_cpp();
 extern "C" const TSLanguage *tree_sitter_json();
 
+namespace {
+// Qt reserves -1 for a new/unprocessed text block. In particular, a newly
+// inserted blank line must change that state so Qt rehighlights its successor.
+constexpr int SeparatorState = 0;
+constexpr int UncoloredState = 1;
+constexpr int FirstRuleState = 2;
+}
+
 SyntaxHighlighter::SyntaxHighlighter(QTextDocument *doc) : QSyntaxHighlighter(doc), parser(ts_parser_new()) {
     parseTimer.setSingleShot(true);
     parseTimer.setInterval(120);
@@ -118,13 +126,16 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
         setFormat(start - begin, std::min(end, span->end) - start,
             readableSyntaxColor(night ? span->color.lighter(165) : span->color, editorBackground));
     }
-    // State -1: blank separator; 0: uncolored paragraph; n+1: block rule n.
-    int state = -1;
+    int state = SeparatorState;
     if (!text.trimmed().isEmpty()) {
         state = previousBlockState();
-        if (state < 0) state = rules ? rules->blockMatcher.match(text) + 1 : 0;
-        if (blocksEnabled && rules && state > 0 && state <= rules->blocks.size())
-            fill(0, text.size(), rules->blocks[state - 1].color);
+        if (state <= SeparatorState) {
+            const int rule = rules ? rules->blockMatcher.match(text) : -1;
+            state = rule < 0 ? UncoloredState : FirstRuleState + rule;
+        }
+        const int rule = state - FirstRuleState;
+        if (blocksEnabled && rules && rule >= 0 && rule < rules->blocks.size())
+            fill(0, text.size(), rules->blocks[rule].color);
     }
     setCurrentBlockState(state);
     if (phrasesEnabled && rules) {
