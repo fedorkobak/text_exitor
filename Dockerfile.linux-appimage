@@ -36,7 +36,7 @@ RUN cmake -S /src -B /build -G Ninja \
 
 ENV APPIMAGE_EXTRACT_AND_RUN=1
 ENV QMAKE=/usr/bin/qmake
-ENV OUTPUT=/output/TextEditor-x86_64.AppImage
+ENV OUTPUT=/output/linux-x86_64.AppImage
 RUN mkdir -p /output \
     && linuxdeploy-x86_64.AppImage \
        --appdir /AppDir \

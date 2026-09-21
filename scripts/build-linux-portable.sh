@@ -3,6 +3,7 @@ set -euo pipefail
 
 project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 output_dir="${project_dir}/dist/linux-portable"
+artifact_name="linux-x86_64.AppImage"
 mkdir -p "${output_dir}"
 
 docker build \
@@ -12,6 +13,6 @@ docker build \
   --output "type=local,dest=${output_dir}" \
   "${project_dir}"
 
-chmod +x "${output_dir}/TextEditor-x86_64.AppImage"
+chmod +x "${output_dir}/${artifact_name}"
 printf 'Portable Linux executable: %s\n' \
-  "${output_dir}/linux-x86_64.AppImage"
+  "${output_dir}/${artifact_name}"
