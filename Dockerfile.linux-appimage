@@ -30,7 +30,9 @@ RUN cmake -S /src -B /build -G Ninja \
     && install -D -m 0644 /src/packaging/text-editor.desktop \
        /AppDir/usr/share/applications/text-editor.desktop \
     && install -D -m 0644 /src/packaging/text-editor.svg \
-       /AppDir/usr/share/icons/hicolor/scalable/apps/text-editor.svg
+       /AppDir/usr/share/icons/hicolor/scalable/apps/text-editor.svg \
+    && install -D -m 0644 /src/packaging/runtime-check.sh \
+       /AppDir/apprun-hooks/zz-text-editor-runtime-check.sh
 
 ENV APPIMAGE_EXTRACT_AND_RUN=1
 ENV QMAKE=/usr/bin/qmake

@@ -1,38 +1,38 @@
 #pragma once
+#include "fileio.h"
+#include "highlighter.h"
 #include <QPlainTextEdit>
-#include <QSyntaxHighlighter>
-#include <QTimer>
-#include <tree_sitter/api.h>
+#include <memory>
 
-class SyntaxHighlighter : public QSyntaxHighlighter {
-public:
-    explicit SyntaxHighlighter(QTextDocument *document);
-    ~SyntaxHighlighter() override;
-    void setLanguage(const QString &language);
-    void parse();
-    int spanCount() const { return spans.size(); }
-protected:
-    void highlightBlock(const QString &text) override;
-private:
-    struct Span { int start, end; QColor color; };
-    QVector<Span> spans;
-    TSParser *parser = nullptr;
-    bool enabled = false;
-    QTimer timer;
-};
-
+struct CharacterMetrics { qint64 characters = 0; };
 class Editor : public QPlainTextEdit {
+    Q_OBJECT
 public:
     explicit Editor(QWidget *parent = nullptr);
     bool load(const QString &file, QString *error);
     bool save(const QString &file, QString *error);
+    bool changedOnDisk() const { return !filePath.isEmpty() && TextFile::changedOnDisk(filePath, format.digest); }
     QString path() const { return filePath; }
     QString language() const { return languageName; }
     void setLanguage(const QString &name);
+    void setEditorFont(const QFont &font);
+    qint64 characterTotal() const;
+    int cursorColumn() const;
     SyntaxHighlighter *highlighter;
+signals:
+    void filesDropped(const QStringList &paths);
+    void fontZoomed(const QFont &font);
+    void statisticsChanged();
+protected:
+    void wheelEvent(QWheelEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dragMoveEvent(QDragMoveEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
 private:
     void detectLanguage();
+    void updateMetrics(int position, int added);
     QString filePath, languageName = "Plain text";
-    bool bom = false;
-    QByteArray newline = "\n";
+    TextFileFormat format;
+    std::shared_ptr<CharacterMetrics> metrics;
+    int wheelRemainder = 0;
 };

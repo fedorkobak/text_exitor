@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(TextEditor VERSION 1.0 LANGUAGES C CXX)
+project(TextEditor VERSION 1.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
@@ -26,7 +26,17 @@ target_include_directories(json_grammar PRIVATE ${json_SOURCE_DIR}/src)
 add_library(editor_parser STATIC ${ts_SOURCE_DIR}/lib/src/lib.c $<TARGET_OBJECTS:cpp_grammar> $<TARGET_OBJECTS:json_grammar>)
 set_target_properties(editor_parser PROPERTIES AUTOMOC OFF C_STANDARD 99)
 target_include_directories(editor_parser PUBLIC ${ts_SOURCE_DIR}/lib/include PRIVATE ${ts_SOURCE_DIR}/lib/src)
-add_library(editor_core src/editor.cpp src/editor.h src/window.cpp src/window.h)
+add_library(editor_core
+  src/editor.cpp src/editor.h
+  src/fileio.cpp src/fileio.h
+  src/highlighter.cpp src/highlighter.h
+  src/rules.cpp src/rules.h
+  src/settings.cpp src/settings.h
+  src/searchpanel.cpp src/searchpanel.h
+  src/theme.cpp src/theme.h
+  src/startup.cpp src/startup.h
+  src/dialogs.cpp src/dialogs.h
+  src/window.cpp src/window.h)
 target_link_libraries(editor_core PUBLIC Qt${EDITOR_QT_MAJOR}::Widgets editor_parser)
 target_include_directories(editor_core PUBLIC src)
 if(WIN32)
@@ -46,7 +56,11 @@ if(BUILD_TESTING)
   find_package(Qt${EDITOR_QT_MAJOR} REQUIRED COMPONENTS Test)
   add_executable(editor_tests tests/editor_tests.cpp)
   target_link_libraries(editor_tests PRIVATE editor_core Qt${EDITOR_QT_MAJOR}::Test)
+  if(MSVC)
+    target_compile_options(editor_tests PRIVATE /utf-8)
+  endif()
   add_test(NAME editor_tests COMMAND editor_tests -platform offscreen)
+  set_tests_properties(editor_tests PROPERTIES TIMEOUT 30)
 endif()
 install(TARGETS text_editor RUNTIME DESTINATION bin)
 install(FILES ${ts_SOURCE_DIR}/LICENSE DESTINATION share/text_editor/licenses RENAME tree-sitter.txt)
