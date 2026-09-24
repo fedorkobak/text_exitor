@@ -28,20 +28,29 @@ bool preserveInvalid(QSettings &ini, QStringList *warnings) {
     return copied;
 }
 bool atomicIni(const QString &path, const std::function<void(QSettings &)> &write, QString *error) {
-    if (!QDir().mkpath(QFileInfo(path).absolutePath())) {
+    const QString directory = QFileInfo(path).absolutePath();
+    if (!QDir().mkpath(directory)) {
         *error = "Cannot create the configuration directory for " + path;
         return false;
     }
-    QTemporaryFile staging(QFileInfo(path).absolutePath() + "/.settings-XXXXXX.ini");
-    if (!staging.open()) { *error = staging.errorString(); return false; }
-    const QString temporaryPath = staging.fileName();
-    staging.close();
+    // Do not use QTemporaryFile here: it keeps its handle open after close(),
+    // and Windows refuses to replace/rename a file that is still open.
+    const QString temporaryPath = directory + "/.settings-"
+        + QUuid::createUuid().toString(QUuid::WithoutBraces) + ".ini";
+    struct Cleanup {
+        QString file;
+        ~Cleanup() { QFile::remove(file); }
+    } cleanup{temporaryPath};
     {
         QSettings ini(temporaryPath, QSettings::IniFormat);
         prepare(ini);
         write(ini);
         ini.sync();
-        if (ini.status() != QSettings::NoError) { *error = "Cannot write temporary configuration for " + path; return false; }
+        if (ini.status() != QSettings::NoError) {
+            *error = QString("Cannot write temporary configuration %1 (%2)")
+                .arg(temporaryPath, ini.status() == QSettings::AccessError ? "access denied" : "format error");
+            return false;
+        }
     }
     QFile input(temporaryPath);
     if (!input.open(QIODevice::ReadOnly)) { *error = input.errorString(); return false; }
