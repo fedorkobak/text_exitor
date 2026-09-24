@@ -84,12 +84,12 @@ void Editor::dropEvent(QDropEvent *event) {
     emit filesDropped(paths);
     event->acceptProposedAction();
 }
-void Editor::setLanguage(const QString &name) { languageName = name; highlighter->setLanguage(name); }
 void Editor::detectLanguage() {
     const QString ext = QFileInfo(filePath).suffix().toLower();
-    if (QStringList{"c", "h", "cpp", "hpp", "cc", "hh", "cxx", "hxx"}.contains(ext)) setLanguage("C/C++");
-    else if (ext == "json") setLanguage("JSON");
-    else setLanguage("Plain text");
+    if (QStringList{"c", "h", "cpp", "hpp", "cc", "hh", "cxx", "hxx"}.contains(ext)) languageName = "C/C++";
+    else if (ext == "json") languageName = "JSON";
+    else languageName = "Plain text";
+    highlighter->setLanguage(languageName);
 }
 bool Editor::load(const QString &file, QString *error) {
     QString text;

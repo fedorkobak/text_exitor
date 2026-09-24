@@ -14,7 +14,6 @@ public:
     bool changedOnDisk() const { return !filePath.isEmpty() && TextFile::changedOnDisk(filePath, format.digest); }
     QString path() const { return filePath; }
     QString language() const { return languageName; }
-    void setLanguage(const QString &name);
     void setEditorFont(const QFont &font);
     qint64 characterTotal() const;
     int cursorColumn() const;

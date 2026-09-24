@@ -72,10 +72,6 @@ Window::Window(const QString &configDirectory, bool restoreSession)
     action(edit, "&Find Text", QKeySequence::Find, [this] { searchPanel->focusQuery(current() ? current()->textCursor().selectedText() : QString()); });
     action(edit, "Find next", QKeySequence(Qt::Key_F3), [this] { searchPanel->navigate(current(), false); });
     action(edit, "Find previous", QKeySequence(Qt::SHIFT | Qt::Key_F3), [this] { searchPanel->navigate(current(), true); });
-    auto language = menuBar()->addMenu("&Language");
-    for (const auto &name : QStringList{"Plain text", "C/C++", "JSON"})
-        action(language, name, {}, [this, name] { if (current()) current()->setLanguage(name); refreshStatus(); });
-
     auto preferences = menuBar()->addMenu("&Settings");
     action(preferences, "Blocks Color…", {}, [this] { editRules(true); });
     action(preferences, "Phrases Color…", {}, [this] { editRules(false); });

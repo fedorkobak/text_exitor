@@ -88,9 +88,14 @@ private slots:
         QCOMPARE(editor.toPlainText(), QString("keep this text"));
     }
     void highlightingTracksUnicodeAndEdits() {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath("sample.cpp");
+        QVERIFY(writeFile(path, QString::fromUtf8("/* 😀 */ int answer = 42;").toUtf8()));
         Editor editor;
-        editor.setLanguage("C/C++");
-        editor.setPlainText(QString::fromUtf8("/* 😀 */ int answer = 42;"));
+        QString error;
+        QVERIFY2(editor.load(path, &error), qPrintable(error));
+        QCOMPARE(editor.language(), QString("C/C++"));
         editor.highlighter->parse();
         editor.highlighter->rehighlight();
         QVERIFY2(editor.highlighter->spanCount() >= 3, qPrintable(QString::number(editor.highlighter->spanCount())));
@@ -103,7 +108,8 @@ private slots:
         editor.insertPlainText("// changed\nint b = 7;");
         QTest::qWait(180);
         QVERIFY(editor.highlighter->spanCount() >= 3);
-        editor.setLanguage("Plain text");
+        QVERIFY2(editor.save(dir.filePath("sample.txt"), &error), qPrintable(error));
+        QCOMPARE(editor.language(), QString("Plain text"));
         QCOMPARE(editor.highlighter->spanCount(), 0);
     }
     void tabsAndCancelClose() {

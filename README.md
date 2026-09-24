@@ -57,7 +57,7 @@ below are instructions for the next build, not a record of completed validation.
   wraps restored/smaller windows and disables wrapping when maximized/fullscreen.
   Wrapped editors have no horizontal scrollbar.
 - Optional tree-sitter highlighting remains available for C/C++ and JSON via
-  extension detection or the Language menu. Other files default to plain text.
+  automatic file extension detection. Other files default to plain text.
 
 ## Settings and sessions
 
