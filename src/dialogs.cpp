@@ -45,11 +45,11 @@ QVariant RuleTableModel::data(const QModelIndex &index, int role) const {
     const auto &rule = values[index.row()];
     if (role == Qt::DecorationRole && index.column() == 1) return colorIcon(rule.color);
     if (role == Qt::DisplayRole || role == Qt::EditRole) return index.column() == 0 ? rule.text : rule.color.name();
-    if (role == Qt::ToolTipRole) return index.column() == 0 ? QString("Double-click to edit the text") : QString("Click to choose a color");
+    if (role == Qt::ToolTipRole) return index.column() == 0 ? QString("Double-click to edit the text") : QString("Click to choose a font color");
     return {};
 }
 QVariant RuleTableModel::headerData(int section, Qt::Orientation orientation, int role) const {
-    if (orientation == Qt::Horizontal && role == Qt::DisplayRole) return section == 0 ? QString("Text") : QString("Color");
+    if (orientation == Qt::Horizontal && role == Qt::DisplayRole) return section == 0 ? QString("Text") : QString("Font color");
     return QAbstractTableModel::headerData(section, orientation, role);
 }
 Qt::ItemFlags RuleTableModel::flags(const QModelIndex &index) const {
@@ -85,8 +85,8 @@ RulesDialog::RulesDialog(const QString &title, const QVector<ColorRule> &rules, 
     resize(640, 450);
     auto layout = new QVBoxLayout(this);
     auto help = new QLabel(blocks
-        ? "Match the beginning of a paragraph (case-sensitive). A blank line ends the block. The longest prefix wins; ties use the later rule."
-        : "Match text within a line, ignoring case. Spaces are allowed. Later rules win when phrases overlap.", this);
+        ? "Color the font of a paragraph starting with the specified text (case-sensitive). A blank line ends the block. The longest prefix wins; ties use the later rule."
+        : "Color the font of matching text within a line, ignoring case. Spaces are allowed. Later rules win when phrases overlap.", this);
     help->setWordWrap(true);
     layout->addWidget(help);
     auto table = new QTableView(this);
@@ -101,7 +101,7 @@ RulesDialog::RulesDialog(const QString &title, const QVector<ColorRule> &rules, 
     layout->addWidget(table);
     connect(table, &QTableView::clicked, this, [this](const QModelIndex &index) {
         if (index.column() != 1) return;
-        const QColor color = QColorDialog::getColor(QColor(model->data(index, Qt::EditRole).toString()), this, "Choose highlight color");
+        const QColor color = QColorDialog::getColor(QColor(model->data(index, Qt::EditRole).toString()), this, "Choose font color");
         if (color.isValid()) model->setData(index, color.name());
     });
     auto buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);

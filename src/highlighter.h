@@ -20,7 +20,7 @@ private:
     struct Span { int start, end; QColor color; };
     void requestRefresh();
     void refreshBatch();
-    void fill(int start, int length, const QColor &color);
+    void highlightSearch(int start, int length, const QColor &color);
     QVector<Span> spans;
     std::shared_ptr<const HighlightRules> rules;
     std::shared_ptr<const PhraseMatcher> search;

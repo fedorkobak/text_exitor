@@ -27,6 +27,14 @@ QColor backgroundAt(const Editor &editor, int position) {
     }
     return {};
 }
+QColor foregroundAt(const Editor &editor, int position) {
+    const QTextBlock block = editor.document()->findBlock(position);
+    for (const auto &range : block.layout()->formats()) {
+        if (position - block.position() >= range.start && position - block.position() < range.start + range.length
+            && range.format.foreground().style() != Qt::NoBrush) return range.format.foreground().color();
+    }
+    return {};
+}
 bool writeFile(const QString &path, const QByteArray &text) {
     QFile file(path);
     return file.open(QIODevice::WriteOnly) && file.write(text) == text.size();
@@ -121,9 +129,16 @@ private slots:
         QCOMPARE(tabs->count(), 1);
         QVERIFY(editor->document()->isModified());
     }
+    void blockPhraseAndFindPriority_data() {
+        QTest::addColumn<bool>("night");
+        QTest::newRow("day") << false;
+        QTest::newRow("night") << true;
+    }
     void blockPhraseAndFindPriority() {
+        QFETCH(bool, night);
         Editor editor;
         AppSettings settings;
+        settings.night = night;
         settings.blocks = {{"NOTE", QColor("#ffdd00")}};
         settings.phrases = {{"important message", QColor("#00ddff")}};
         auto rules = std::make_shared<HighlightRules>(settings.blocks, settings.phrases);
@@ -132,22 +147,30 @@ private slots:
         editor.highlighter->configure(rules, settings);
         editor.highlighter->setSearch("MESSAGE");
         editor.highlighter->rehighlight();
-        QCOMPARE(backgroundAt(editor, 0), settings.blocks[0].color);
-        QCOMPARE(backgroundAt(editor, text.indexOf("continued")), settings.blocks[0].color);
-        QCOMPARE(backgroundAt(editor, text.indexOf("Important")), settings.phrases[0].color);
+        QCOMPARE(foregroundAt(editor, 0), settings.blocks[0].color);
+        QCOMPARE(foregroundAt(editor, text.indexOf("continued")), settings.blocks[0].color);
+        QCOMPARE(foregroundAt(editor, text.indexOf("Important")), settings.phrases[0].color);
         QCOMPARE(backgroundAt(editor, text.indexOf("Message")), QColor(Qt::red));
+        QCOMPARE(foregroundAt(editor, text.indexOf("Message")), QColor(Qt::black));
+        QCOMPARE(foregroundAt(editor, text.lastIndexOf("Important")), settings.phrases[0].color);
+        QVERIFY(!backgroundAt(editor, 0).isValid());
+        QVERIFY(!backgroundAt(editor, text.indexOf("continued")).isValid());
+        QVERIFY(!backgroundAt(editor, text.indexOf("Important")).isValid());
         QVERIFY(!backgroundAt(editor, text.indexOf("normal")).isValid());
         settings.findEnabled = false;
         editor.highlighter->configure(rules, settings);
         editor.highlighter->rehighlight();
-        QCOMPARE(backgroundAt(editor, text.indexOf("Message")), settings.phrases[0].color);
+        QCOMPARE(foregroundAt(editor, text.indexOf("Message")), settings.phrases[0].color);
+        for (int i = 0; i < text.size(); ++i)
+            QVERIFY(!backgroundAt(editor, i).isValid());
         settings.phrasesEnabled = false;
         editor.highlighter->configure(rules, settings);
         editor.highlighter->rehighlight();
-        QCOMPARE(backgroundAt(editor, text.indexOf("Message")), settings.blocks[0].color);
+        QCOMPARE(foregroundAt(editor, text.indexOf("Message")), settings.blocks[0].color);
         settings.blocksEnabled = false;
         editor.highlighter->configure(rules, settings);
         editor.highlighter->rehighlight();
+        QVERIFY(!foregroundAt(editor, 0).isValid());
         QVERIFY(!backgroundAt(editor, 0).isValid());
         QCOMPARE(editor.toPlainText(), text);
         QVERIFY(!editor.document()->isModified());
@@ -159,20 +182,20 @@ private slots:
         editor.highlighter->configure(std::make_shared<HighlightRules>(settings.blocks, settings.phrases), settings);
         editor.setPlainText("NOTE first\nsecond\n\nnormal\nNOTE inside uncolored paragraph");
         editor.highlighter->rehighlight();
-        QCOMPARE(backgroundAt(editor, 0), QColor(Qt::green));
-        QCOMPARE(backgroundAt(editor, 11), QColor(Qt::green));
-        QVERIFY(!backgroundAt(editor, editor.toPlainText().lastIndexOf("NOTE")).isValid());
+        QCOMPARE(foregroundAt(editor, 0), QColor(Qt::green));
+        QCOMPARE(foregroundAt(editor, 11), QColor(Qt::green));
+        QVERIFY(!foregroundAt(editor, editor.toPlainText().lastIndexOf("NOTE")).isValid());
         QTextCursor cursor = editor.textCursor();
         cursor.setPosition(0);
         cursor.setPosition(4, QTextCursor::KeepAnchor);
         cursor.insertText("other");
-        QTRY_VERIFY(!backgroundAt(editor, editor.toPlainText().indexOf("second")).isValid());
+        QTRY_VERIFY(!foregroundAt(editor, editor.toPlainText().indexOf("second")).isValid());
         editor.undo();
-        QTRY_COMPARE(backgroundAt(editor, 0), QColor(Qt::green));
+        QTRY_COMPARE(foregroundAt(editor, 0), QColor(Qt::green));
         cursor = editor.textCursor();
         cursor.setPosition(editor.toPlainText().indexOf("\n\n") + 1);
         cursor.deleteChar();
-        QTRY_COMPARE(backgroundAt(editor, editor.toPlainText().indexOf("normal")), QColor(Qt::green));
+        QTRY_COMPARE(foregroundAt(editor, editor.toPlainText().indexOf("normal")), QColor(Qt::green));
     }
     void insertingSeparatorActivatesFollowingBlock_data() {
         QTest::addColumn<QString>("separatorText");
@@ -194,9 +217,9 @@ private slots:
         QCoreApplication::processEvents();
         const int firstHello = original.indexOf("hello");
         const int secondHello = original.lastIndexOf("hello");
-        QCOMPARE(backgroundAt(editor, firstHello), color);
-        QVERIFY(!backgroundAt(editor, secondHello).isValid());
-        QVERIFY(!backgroundAt(editor, original.indexOf("is not block color")).isValid());
+        QCOMPARE(foregroundAt(editor, firstHello), color);
+        QVERIFY(!foregroundAt(editor, secondHello).isValid());
+        QVERIFY(!foregroundAt(editor, original.indexOf("is not block color")).isValid());
 
         // Press Enter at the END of "this", rather than at the start of
         // "hello". Qt preserves the following paragraph and its cached state.
@@ -208,20 +231,20 @@ private slots:
         cursor.endEditBlock();
         const QString changed = original.left(secondHello - 1) + '\n' + separatorText + original.mid(secondHello - 1);
         QCOMPARE(editor.toPlainText(), changed);
-        QTRY_COMPARE(backgroundAt(editor, changed.lastIndexOf("hello")), color);
-        QCOMPARE(backgroundAt(editor, changed.indexOf("is not block color")), color);
-        QCOMPARE(backgroundAt(editor, firstHello), color);
-        QVERIFY(!backgroundAt(editor, changed.indexOf("plain tail")).isValid());
+        QTRY_COMPARE(foregroundAt(editor, changed.lastIndexOf("hello")), color);
+        QCOMPARE(foregroundAt(editor, changed.indexOf("is not block color")), color);
+        QCOMPARE(foregroundAt(editor, firstHello), color);
+        QVERIFY(!foregroundAt(editor, changed.indexOf("plain tail")).isValid());
 
         editor.undo();
         QCOMPARE(editor.toPlainText(), original);
-        QTRY_VERIFY(!backgroundAt(editor, secondHello).isValid());
-        QVERIFY(!backgroundAt(editor, original.indexOf("is not block color")).isValid());
-        QCOMPARE(backgroundAt(editor, firstHello), color);
+        QTRY_VERIFY(!foregroundAt(editor, secondHello).isValid());
+        QVERIFY(!foregroundAt(editor, original.indexOf("is not block color")).isValid());
+        QCOMPARE(foregroundAt(editor, firstHello), color);
         editor.redo();
         QCOMPARE(editor.toPlainText(), changed);
-        QTRY_COMPARE(backgroundAt(editor, changed.lastIndexOf("hello")), color);
-        QCOMPARE(backgroundAt(editor, changed.indexOf("is not block color")), color);
+        QTRY_COMPARE(foregroundAt(editor, changed.lastIndexOf("hello")), color);
+        QCOMPARE(foregroundAt(editor, changed.indexOf("is not block color")), color);
     }
     void unicodeOverlapsAndLargeRuleSet() {
         QVector<ColorRule> rules{{"aba", Qt::yellow}, {"ba", Qt::green}, {QString::fromUtf8("ВАЖНО 😀"), Qt::cyan}};
@@ -238,8 +261,9 @@ private slots:
         editor.highlighter->configure(std::make_shared<HighlightRules>(settings.blocks, settings.phrases), settings);
         editor.setPlainText("ababa");
         editor.highlighter->rehighlight();
-        QCOMPARE(backgroundAt(editor, 0), QColor(Qt::yellow));
-        for (int i = 1; i < 5; ++i) QCOMPARE(backgroundAt(editor, i), QColor(Qt::green));
+        QCOMPARE(foregroundAt(editor, 0), QColor(Qt::yellow));
+        for (int i = 1; i < 5; ++i) QCOMPARE(foregroundAt(editor, i), QColor(Qt::green));
+        for (int i = 0; i < 5; ++i) QVERIFY(!backgroundAt(editor, i).isValid());
         BlockMatcher prefixes({{"N", Qt::yellow}, {"NOTE", Qt::green}, {"NOTE", Qt::red}, {"", Qt::blue}});
         QCOMPARE(prefixes.match("NOTE text"), 2);
         QCOMPARE(prefixes.match("note text"), -1);

@@ -41,7 +41,7 @@ The user must be able to configure it through:
 Each rule consists of:
 
 * A user-defined character sequence indicating the beginning of a block.
-* A highlight color associated with that sequence.
+* A font (foreground) color associated with that sequence.
 
 Display each rule approximately as:
 
@@ -54,7 +54,9 @@ A text block is defined as follows:
 * A block starts when its text begins with one of the configured sequences.
 * A block ends at an empty line.
 * Therefore, blocks are separated by empty lines/paragraphs.
-* The corresponding configured color is applied to the complete block.
+* The corresponding configured color is applied to the font of all text in the complete block.
+
+`Blocks Color` must change only the text foreground color, not the text background. The editor's theme background must remain visible.
 
 Block highlighting must update dynamically in real time while the document is being edited.
 
@@ -88,7 +90,7 @@ all of the following must match:
 
 `ImPoRtAnT MeSsAgE`
 
-Each phrase has its own configurable highlight color.
+Each phrase has its own configurable font (foreground) color. `Phrases Color` must apply that color to the matched text without changing the text background.
 
 Display rules approximately as:
 
@@ -137,7 +139,7 @@ Highlighting may overlap. The following priority order must be respected:
 2. Phrases Color — medium priority
 3. Find Color — highest priority
 
-For example, if text belongs to a highlighted block and also matches a configured phrase, the phrase color must be visible.
+For example, if text belongs to a highlighted block and also matches a configured phrase, the phrase's font color must override the block's font color. Neither rule changes the text background.
 
 If the same text also matches the current Find Text query, Find Color must override both Block and Phrase highlighting.
 

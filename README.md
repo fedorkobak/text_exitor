@@ -37,9 +37,12 @@ below are instructions for the next build, not a record of completed validation.
   picker. Closing a changed block/phrase/find-color dialog asks Save, Discard,
   or Cancel. Save failures keep the coloring dialog available for retry.
 - Highlight priority is tree-sitter syntax, then **Blocks < Phrases < Find**.
-  Configured colors are backgrounds; black/white foregrounds are selected for
-  readability. The selection uses the theme selection color. Three independent
-  menu/toolbar toggles turn Blocks, Phrases, and Find coloring on/off.
+  Block and phrase colors apply to the font, preserving the theme background.
+  Find uses a colored background with a contrasting black/white font and takes
+  priority over both rules. Saved block/phrase colors are reused as font colors;
+  choose colors that are readable with your theme. The selection uses the theme
+  selection color. Three independent menu/toolbar toggles turn Blocks, Phrases,
+  and Find coloring on/off.
   Visual formatting never enters saved text or the Undo history.
 - **Settings → Editor Font** changes family, size, and styles across all tabs.
   Ctrl+mouse-wheel zoom is global and persistent, with a 6–96 point range.

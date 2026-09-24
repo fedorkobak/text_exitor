@@ -20,13 +20,16 @@ the retained legacy target is needed. Use temporary files and configuration.
       content. Errors must not replace or destroy the current document.
 - [ ] Add Blocks Color rules `N` (yellow), `NOTE` (green), and another `NOTE`
       (blue). Verify longest-prefix matching and the later-rule tie break.
+      Confirm the chosen color changes the font throughout the block while the
+      text background stays the theme background, in both Day and Night modes.
       Continuation lines stay colored until an empty/whitespace-only line.
       A matching prefix inside an already-started paragraph must not restart it.
 - [ ] Edit/remove a paragraph prefix or separator, then undo/redo. Verify
       downstream block colors update until the next separator.
 - [ ] Add phrases `Important Message`, `ВАЖНО`, `aba`, and `ba` in distinct
       colors. Check all case variants, spaces, Cyrillic, emoji offsets, and
-      overlapping occurrences in `ababa`. The later phrase wins overlaps.
+      overlapping occurrences in `ababa`. The later phrase wins font-color
+      overlaps; phrases must not add a background color.
 - [ ] Try empty and multiline rules; verify validation. Add many thousands of
       rules and scroll/edit/remove selections without the dialog growing.
 - [ ] Click color swatches. Leave each changed block, phrase, Find Color, and
@@ -34,7 +37,9 @@ the retained legacy target is needed. Use temporary files and configuration.
       Save, Discard, and Cancel. Unchanged dialogs should close without prompting.
 - [ ] Search for a phrase also matched by a block and phrase rule. Verify
       **Blocks < Phrases < Find**. Find defaults to red. Change its color and
-      confirm it survives restart. Toggle each highlight system independently;
+      confirm search still uses a background with readable text. Disable Find
+      Color and verify the underlying phrase/block font color is restored.
+      Confirm the Find color survives restart. Toggle each highlight system independently;
       file content, modified state, and Undo history must be unaffected.
 - [ ] Enter/change/clear a Find query; check all occurrences, case-insensitive
       matches, overlaps, no matches, next/previous, wraparound, Ctrl+F, F3, and

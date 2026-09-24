@@ -111,7 +111,7 @@ void SyntaxHighlighter::parse() {
     }
     requestRefresh();
 }
-void SyntaxHighlighter::fill(int start, int length, const QColor &color) {
+void SyntaxHighlighter::highlightSearch(int start, int length, const QColor &color) {
     QTextCharFormat format;
     format.setBackground(color);
     format.setForeground(readableForeground(color));
@@ -135,7 +135,7 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
         }
         const int rule = state - FirstRuleState;
         if (blocksEnabled && rules && rule >= 0 && rule < rules->blocks.size())
-            fill(0, text.size(), rules->blocks[rule].color);
+            setFormat(0, text.size(), rules->blocks[rule].color);
     }
     setCurrentBlockState(state);
     if (phrasesEnabled && rules) {
@@ -143,8 +143,8 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
         rules->phraseMatcher.scan(text, [&matches](PhraseMatcher::Match match) { matches.append(match); });
         // Later rules win overlapping phrase colors, independent of trie order.
         std::sort(matches.begin(), matches.end(), [](const PhraseMatcher::Match &a, const PhraseMatcher::Match &b) { return a.rule < b.rule; });
-        for (const auto &match : matches) fill(match.start, match.length, rules->phrases[match.rule].color);
+        for (const auto &match : matches) setFormat(match.start, match.length, rules->phrases[match.rule].color);
     }
     if (findEnabled && search)
-        search->scan(text, [this](PhraseMatcher::Match match) { fill(match.start, match.length, findColor); });
+        search->scan(text, [this](PhraseMatcher::Match match) { highlightSearch(match.start, match.length, findColor); });
 }
